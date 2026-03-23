@@ -33,7 +33,7 @@ const Appointment = ({ initialCategory }) => {
       setMyAppointments(appRes.data);
     } catch (err) { toast.error("Data load fail!"); }
   };
-
+cvds
   useEffect(() => { 
     if (userInfo?.token) fetchInitialData(); 
     if(initialCategory) setFormData(prev => ({ ...prev, category: initialCategory }));
