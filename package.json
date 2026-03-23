@@ -1,0 +1,15 @@
+{
+  "name": "pet-clinic-pro",
+  "version": "1.0.0",
+  "description": "MERN Pet Clinic Project",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "server": "cd backend && npm start",
+    "client": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
