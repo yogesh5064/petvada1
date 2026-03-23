@@ -26,9 +26,9 @@ connectDB();
 
 const app = express();
 
-// ✅ CORS Setup
+// ✅ CORS Updated (Production ke liye zaroori hai)
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174'], 
+  origin: '*', 
   credentials: true
 }));
 
@@ -49,7 +49,6 @@ cron.schedule('0 * * * *', async () => {
     tomorrow.setDate(tomorrow.getDate() + 1);
     const targetDateStr = tomorrow.toISOString().split('T')[0];
     
-    // 🏥 1. Appointment Reminders (24h before)
     const appointments = await Appointment.find({ 
       date: targetDateStr, 
       status: 'Approved' 
@@ -67,7 +66,6 @@ cron.schedule('0 * * * *', async () => {
         });
     }
 
-    // 🏨 2. Hostel Checkout Reminders (24h before checkout)
     const upcomingCheckouts = await Hostel.find({
       checkOutDate: targetDateStr,
       status: 'Checked-In'
@@ -123,3 +121,6 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
+// ✅ Vercel ke liye export add kiya
+export default app;
