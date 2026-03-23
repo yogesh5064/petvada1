@@ -2,9 +2,10 @@
   "name": "pet-clinic-pro",
   "version": "1.0.0",
   "description": "MERN Pet Clinic Project",
-  "main": "index.js",
+  "main": "backend/server.js",
   "type": "module",
   "scripts": {
+    "start": "node backend/server.js",
     "server": "cd backend && npm start",
     "client": "cd frontend && npm run dev",
     "dev": "concurrently \"npm run server\" \"npm run client\""
