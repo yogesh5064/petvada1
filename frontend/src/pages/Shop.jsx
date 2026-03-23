@@ -14,7 +14,7 @@ const Shop = () => {
   
   const navigate = useNavigate();
   const location = useLocation(); 
-  const BASE_URL = "http://localhost:5000"; 
+  const BASE_URL = "https://petvada1.onrender.com"; 
 
   useEffect(() => {
     const savedCart = localStorage.getItem('cartItems');

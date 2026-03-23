@@ -15,7 +15,7 @@ const OrderHistory = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const { data } = await axios.get('http://localhost:5000/api/users/my-orders', config);
+        const { data } = await axios.get('https://petvada1.onrender.com/api/users/my-orders', config);
         setOrders(data);
       } catch (err) {
         toast.error("History load nahi ho payi!");
@@ -134,7 +134,7 @@ const OrderHistory = () => {
                       <div className="flex items-center gap-3 md:gap-5">
                         <div className="w-12 h-12 md:w-16 md:h-16 bg-white rounded-xl md:rounded-2xl overflow-hidden border border-gray-100 flex-shrink-0 shadow-sm">
                           <img 
-                            src={item.image.startsWith('http') ? item.image : `http://localhost:5000${item.image}`} 
+                            src={item.image.startsWith('http') ? item.image : `https://petvada1.onrender.com${item.image}`} 
                             alt="" 
                             className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-500" 
                           />

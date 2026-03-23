@@ -29,7 +29,7 @@ const CheckoutVerification = () => {
     const fetchUserProfile = async () => {
       try {
         const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
-        const { data } = await axios.get('http://localhost:5000/api/users/profile', config);
+        const { data } = await axios.get('https://petvada1.onrender.com/api/users/profile', config);
         
         setUserData({
           address: data.address || '',
@@ -127,7 +127,7 @@ const CheckoutVerification = () => {
         } 
       };
 
-      await axios.put('http://localhost:5000/api/users/profile', userData, config);
+      await axios.put('https://petvada1.onrender.com/api/users/profile', userData, config);
       toast.dismiss(loadingToast);
       toast.success("Details Verified! 🐾");
       

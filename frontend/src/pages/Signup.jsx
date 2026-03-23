@@ -20,7 +20,7 @@ const Signup = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await axios.post('http://localhost:5000/api/users/send-otp', { 
+      const { data } = await axios.post('https://petvada1.onrender.com/api/users/send-otp', { 
         email: formData.email 
       });
       toast.success(data.message || "OTP sent! Check your email. 📩");
@@ -38,7 +38,7 @@ const Signup = () => {
     
     setLoading(true);
     try {
-      const { data } = await axios.post('http://localhost:5000/api/users/verify-signup', formData);
+      const { data } = await axios.post('https://petvada1.onrender.com/api/users/verify-signup', formData);
 
       if (data && data.token) {
         // ✅ STEP 1: Storage update (Data save kar rahe hain)

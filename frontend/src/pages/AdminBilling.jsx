@@ -23,7 +23,7 @@ const AdminBilling = () => {
   const [customer, setCustomer] = useState({ name: '', mobile: '', id: '' });
   const qtyRef = useRef(null);
 
-  const API_BASE = "http://localhost:5000/api";
+  const API_BASE = "https://petvada1.onrender.com/api";
   const userInfo = JSON.parse(localStorage.getItem('userInfo'));
   const config = { headers: { Authorization: `Bearer ${userInfo?.token}` } };
 

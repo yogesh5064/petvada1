@@ -19,7 +19,7 @@ const PetProfile = () => {
       try {
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
         const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
-        const { data } = await axios.get(`http://localhost:5000/api/pets/${id}`, config);
+        const { data } = await axios.get(`https://petvada1.onrender.com/api/pets/${id}`, config);
         setPet(data);
       } catch (err) {
         toast.error("Pet details nahi mil payi!");

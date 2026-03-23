@@ -9,7 +9,7 @@ const ChangePassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put('http://localhost:5000/api/users/password', passwords);
+      await axios.put('https://petvada1.onrender.com/api/users/password', passwords);
       toast.success("Password badal gaya! 🔐");
       setPasswords({ old: '', new: '' });
     } catch (err) {

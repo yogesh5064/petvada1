@@ -28,7 +28,7 @@ const AdminInventory = () => {
 
   const fetchProducts = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/products');
+      const { data } = await axios.get('https://petvada1.onrender.com/api/products');
       setProducts(data);
     } catch (err) { toast.error("Inventory load fail!"); }
     finally { setLoading(false); }
@@ -64,7 +64,7 @@ const AdminInventory = () => {
     if (image) data.append('image', image);
 
     try {
-      await axios.post('http://localhost:5000/api/products/add', data, config);
+      await axios.post('https://petvada1.onrender.com/api/products/add', data, config);
       toast.success(isExisting ? "Stock Updated!" : "New Product Added!");
       setShowModal(false);
       fetchProducts();

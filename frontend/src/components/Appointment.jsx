@@ -26,8 +26,8 @@ const Appointment = ({ initialCategory }) => {
   const fetchInitialData = async () => {
     try {
       const [petsRes, appRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/pets/my-pets', config),
-        axios.get('http://localhost:5000/api/appointments/my', config)
+        axios.get('https://petvada1.onrender.com/api/pets/my-pets', config),
+        axios.get('https://petvada1.onrender.com/api/appointments/my', config)
       ]);
       setRegisteredPets(petsRes.data);
       setMyAppointments(appRes.data);
@@ -48,7 +48,7 @@ const Appointment = ({ initialCategory }) => {
         ? `${formData.houseFlat}, ${formData.landmark}, ${formData.detectedAddress}`
         : 'Clinic Visit';
       const finalData = { ...formData, address: fullAddressString, visitType };
-      await axios.post('http://localhost:5000/api/appointments', finalData, config);
+      await axios.post('https://petvada1.onrender.com/api/appointments', finalData, config);
       toast.success(`${formData.category} Booking Done! 🐾`);
       setFormData({ 
         petName: '', petType: '', breed: '', category: initialCategory || '', date: '', time: '', reason: '',

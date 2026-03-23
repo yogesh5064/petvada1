@@ -38,9 +38,9 @@ const UserDashboard = () => {
   const fetchData = async () => {
     try {
       const [petRes, appRes, profileRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/pets/my-pets', config),
-        axios.get('http://localhost:5000/api/appointments/my', config),
-        axios.get('http://localhost:5000/api/users/profile', config)
+        axios.get('https://petvada1.onrender.com/api/pets/my-pets', config),
+        axios.get('https://petvada1.onrender.com/api/appointments/my', config),
+        axios.get('https://petvada1.onrender.com/api/users/profile', config)
       ]);
       setPets(petRes.data);
       setAppointments(appRes.data);
@@ -56,7 +56,7 @@ const UserDashboard = () => {
   const handleAddPet = async (e) => {
     e.preventDefault();
     try {
-      const { data } = await axios.post('http://localhost:5000/api/pets', newPet, config);
+      const { data } = await axios.post('https://petvada1.onrender.com/api/pets', newPet, config);
       setPets((prev) => [data, ...prev]); 
       setShowModal(false);
       setNewPet({ name: '', petType: '', breed: '', dob: '' });

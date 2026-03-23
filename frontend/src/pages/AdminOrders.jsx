@@ -17,7 +17,7 @@ const AdminOrders = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get('http://localhost:5000/api/admin/online-orders', config);
+      const { data } = await axios.get('https://petvada1.onrender.com/api/admin/online-orders', config);
       if (data && Array.isArray(data)) setOrders(data);
     } catch (err) {
       toast.error("Orders load nahi ho paye!");
@@ -35,7 +35,7 @@ const AdminOrders = () => {
 
     const loadingToast = toast.loading(`Updating to ${newStatus}...`);
     try {
-      await axios.put(`http://localhost:5000/api/orders/${id}/status`, { status: newStatus }, config);
+      await axios.put(`https://petvada1.onrender.com/api/orders/${id}/status`, { status: newStatus }, config);
       toast.dismiss(loadingToast);
       toast.success(newStatus === 'Delivered' ? "Order Billed & Delivered! 🧾" : `Order ${newStatus}!`);
       fetchOrders();

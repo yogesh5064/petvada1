@@ -32,7 +32,7 @@ const Profile = () => {
 
   const fetchAddresses = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/users/profile', config);
+      const { data } = await axios.get('https://petvada1.onrender.com/api/users/profile', config);
       setAddresses(data.addresses || []);
     } catch (err) { console.error("Fetch fail"); }
   };
@@ -50,7 +50,7 @@ const Profile = () => {
     if (phone.length !== 10) return toast.error("Phone number 10 digits ka hona chahiye!");
     setLoading(true);
     try {
-      const { data } = await axios.put('http://localhost:5000/api/users/profile', { name, phone }, config);
+      const { data } = await axios.put('https://petvada1.onrender.com/api/users/profile', { name, phone }, config);
       const updatedUser = { ...userData, name: data.name, phone: data.phone };
       localStorage.setItem('userInfo', JSON.stringify(updatedUser));
       setUserData(updatedUser);
@@ -66,7 +66,7 @@ const Profile = () => {
     }
     setLoading(true);
     try {
-      await axios.put('http://localhost:5000/api/users/change-password', { 
+      await axios.put('https://petvada1.onrender.com/api/users/change-password', { 
         oldPassword: passwords.oldPassword, 
         newPassword: passwords.newPassword 
       }, config);
@@ -93,7 +93,7 @@ const Profile = () => {
     if (newAddr.phone.length !== 10) return toast.error("Delivery number 10 digits ka chahiye!");
     setLoading(true);
     try {
-      const { data } = await axios.post('http://localhost:5000/api/users/add-address', newAddr, config);
+      const { data } = await axios.post('https://petvada1.onrender.com/api/users/add-address', newAddr, config);
       setAddresses(data);
       setShowAddrModal(false);
       setNewAddr({ label: 'Home', fullAddress: '', city: '', pincode: '', phone: '' }); 
@@ -103,13 +103,13 @@ const Profile = () => {
   };
 
   const handleDelete = async (id) => {
-    const { data } = await axios.delete(`http://localhost:5000/api/users/address/${id}`, config);
+    const { data } = await axios.delete(`https://petvada1.onrender.com/api/users/address/${id}`, config);
     setAddresses(data);
     toast.success("Deleted!");
   };
 
   const handleDefault = async (id) => {
-    const { data } = await axios.put(`http://localhost:5000/api/users/address/default/${id}`, {}, config);
+    const { data } = await axios.put(`https://petvada1.onrender.com/api/users/address/default/${id}`, {}, config);
     setAddresses(data);
     toast.success("Default set!");
   };

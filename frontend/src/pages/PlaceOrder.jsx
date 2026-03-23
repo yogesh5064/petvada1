@@ -61,7 +61,7 @@ const PlaceOrder = () => {
       };
 
       // API Call
-      await axios.post('http://localhost:5000/api/orders', orderData, config);
+      await axios.post('https://petvada1.onrender.com/api/orders', orderData, config);
 
       toast.dismiss(loadingToast);
       toast.success("Order Placed Successfully! 🐾", {
@@ -120,7 +120,7 @@ const PlaceOrder = () => {
               {cart.map((item) => (
                 <div key={item._id} className="flex items-center gap-4 md:gap-6 border-b border-gray-50 pb-4 last:border-0 group">
                   <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl md:rounded-3xl overflow-hidden border border-gray-100 bg-gray-50 flex-shrink-0 shadow-inner">
-                    <img src={`http://localhost:5000${item.image}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={item.name} />
+                    <img src={`https://petvada1.onrender.com${item.image}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={item.name} />
                   </div>
                   <div className="flex-1 overflow-hidden">
                     <p className="font-black text-xs md:text-sm uppercase italic text-gray-800 truncate">{item.name}</p>

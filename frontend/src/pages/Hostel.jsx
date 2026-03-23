@@ -34,8 +34,8 @@ const Hostel = () => {
     const fetchData = async () => {
       try {
         const [petsRes, appRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/pets/my-pets', config),
-          axios.get('http://localhost:5000/api/appointments/my', config)
+          axios.get('https://petvada1.onrender.com/api/pets/my-pets', config),
+          axios.get('https://petvada1.onrender.com/api/appointments/my', config)
         ]);
         setMyPets(petsRes.data);
         const current = appRes.data.find(s => s.category?.toLowerCase() === 'hostel' && s.status === 'Checked-In');
@@ -98,7 +98,7 @@ const Hostel = () => {
         visitType: 'Walk-in'
       };
 
-      await axios.post('http://localhost:5000/api/appointments', bookingData, config);
+      await axios.post('https://petvada1.onrender.com/api/appointments', bookingData, config);
       toast.dismiss(loadingToast);
       toast.success(`Booking Confirmed for ₹${finalPrice}! 🐾`);
       setTimeout(() => window.location.reload(), 1500);

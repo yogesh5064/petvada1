@@ -20,7 +20,7 @@ const InvoicePage = () => {
     const syncInventory = async () => {
       try {
         for (let item of cart) {
-          await axios.post('http://localhost:5000/api/products/add', {
+          await axios.post('https://petvada1.onrender.com/api/products/add', {
             name: item.name,
             quantity: -(item.qty)
           }, config);

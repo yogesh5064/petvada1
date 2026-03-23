@@ -22,7 +22,7 @@ const AdminHistory = () => {
 
   const fetchHistory = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/appointments', config);
+      const { data } = await axios.get('https://petvada1.onrender.com/api/appointments', config);
       setAppointments(data);
     } catch (err) { toast.error("History load nahi ho saki!"); }
     finally { setLoading(false); }

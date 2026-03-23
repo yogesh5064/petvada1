@@ -24,7 +24,7 @@ const AdminHostel = () => {
         headers: { Authorization: `Bearer ${userInfo.token}`, 'Cache-Control': 'no-cache' } 
       };
 
-      const response = await axios.get('http://localhost:5000/api/admin/hostel-stays-from-appointments', config);
+      const response = await axios.get('https://petvada1.onrender.com/api/admin/hostel-stays-from-appointments', config);
       
       if (response.data) {
         setData({
@@ -48,7 +48,7 @@ const AdminHostel = () => {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
       const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
       
-      const res = await axios.get(`http://localhost:5000/api/admin/hostel/generate-bill/${id}`, config);
+      const res = await axios.get(`https://petvada1.onrender.com/api/admin/hostel/generate-bill/${id}`, config);
       setShowBill({ ...res.data, appointmentId: id });
     } catch (err) {
       toast.error("Billing calculation error!");
@@ -65,7 +65,7 @@ const AdminHostel = () => {
       const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
 
       // Status 'Completed' bhejte hi controller email trigger kar dega
-      await axios.put(`http://localhost:5000/api/admin/appointment/${showBill.appointmentId}`, { 
+      await axios.put(`https://petvada1.onrender.com/api/admin/appointment/${showBill.appointmentId}`, { 
         status: 'Completed'
       }, config);
       
@@ -84,7 +84,7 @@ const AdminHostel = () => {
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
       const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
-      await axios.put(`http://localhost:5000/api/admin/appointment/${id}`, { status: newStatus }, config);
+      await axios.put(`https://petvada1.onrender.com/api/admin/appointment/${id}`, { status: newStatus }, config);
       toast.dismiss(loadingToast);
       toast.success(`Updated to ${newStatus} 🏨`);
       fetchStays();

@@ -45,10 +45,10 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       const [appRes, dashRes, orderRes, billRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/admin/appointments', config),
-        axios.get('http://localhost:5000/api/admin/dashboard-data', config),
-        axios.get('http://localhost:5000/api/admin/online-orders', config),
-        axios.get('http://localhost:5000/api/admin/customer-details/all-bills', config)
+        axios.get('https://petvada1.onrender.com/api/admin/appointments', config),
+        axios.get('https://petvada1.onrender.com/api/admin/dashboard-data', config),
+        axios.get('https://petvada1.onrender.com/api/admin/online-orders', config),
+        axios.get('https://petvada1.onrender.com/api/admin/customer-details/all-bills', config)
       ]);
       setAppointments(appRes.data);
       setDashData(dashRes.data);
@@ -61,7 +61,7 @@ const AdminDashboard = () => {
 
   const handleUpdateStatus = async (id, newStatus) => {
     try {
-      await axios.put(`http://localhost:5000/api/admin/appointments/${id}`, { status: newStatus }, config);
+      await axios.put(`https://petvada1.onrender.com/api/admin/appointments/${id}`, { status: newStatus }, config);
       toast.success(`Updated to ${newStatus}`);
       fetchAllData();
     } catch (err) {
@@ -98,11 +98,11 @@ const AdminDashboard = () => {
       };
 
       // 🛠️ Changed URL to standard endpoint (404 Fix)
-      const response = await axios.post('http://localhost:5000/api/admin/customer-details/bills', billData, config);
+      const response = await axios.post('https://petvada1.onrender.com/api/admin/customer-details/bills', billData, config);
       
       if(response.status === 200 || response.status === 201) {
         // Automatically mark appointment as completed
-        await axios.put(`http://localhost:5000/api/admin/appointments/${hostelModal.data._id}`, { status: 'Completed' }, config);
+        await axios.put(`https://petvada1.onrender.com/api/admin/appointments/${hostelModal.data._id}`, { status: 'Completed' }, config);
         
         toast.success("Hostel Bill Saved Successfully!");
         setHostelModal({ ...hostelModal, isOpen: false });

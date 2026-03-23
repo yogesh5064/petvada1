@@ -19,7 +19,7 @@ const HostelBookings = () => {
   useEffect(() => {
     const fetchStays = async () => {
       try {
-        const { data } = await axios.get('http://localhost:5000/api/appointments/my', config);
+        const { data } = await axios.get('https://petvada1.onrender.com/api/appointments/my', config);
         
         // Filter fix: Matches your data (category: "Hostel")
         const hostelStays = data.filter(app => 

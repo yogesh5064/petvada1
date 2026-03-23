@@ -20,14 +20,14 @@ const AdminCustomers = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/users', config);
+      const { data } = await axios.get('https://petvada1.onrender.com/api/users', config);
       setAllUsers(data);
     } catch (err) { toast.error("User list load nahi hui!"); }
   };
 
   const viewDetails = async (userId) => {
     try {
-      const { data } = await axios.get(`http://localhost:5000/api/admin/customer-details/${userId}`, config);
+      const { data } = await axios.get(`https://petvada1.onrender.com/api/admin/customer-details/${userId}`, config);
       setSelectedUser(data.customer);
       setHistory({ 
         pets: data.pets || [], 
