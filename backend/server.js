@@ -26,9 +26,9 @@ connectDB();
 
 const app = express();
 
-// ✅ CORS Setup
+// ✅ CORS: Sabhi origins allow hain (Frontend ke liye zaroori)
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174'], 
+  origin: '*', 
   credentials: true
 }));
 
@@ -40,7 +40,7 @@ const __dirname = path.resolve();
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
 // ---------------------------------------------------------
-// ⏰ AUTOMATED EMAIL CRON JOB (Every Hour check)
+// ⏰ AUTOMATED EMAIL CRON JOB
 // ---------------------------------------------------------
 cron.schedule('0 * * * *', async () => {
   console.log('🔍 Running Scheduled Reminders...');
@@ -49,25 +49,23 @@ cron.schedule('0 * * * *', async () => {
     tomorrow.setDate(tomorrow.getDate() + 1);
     const targetDateStr = tomorrow.toISOString().split('T')[0];
     
-    // 🏥 1. Appointment Reminders (24h before)
     const appointments = await Appointment.find({ 
       date: targetDateStr, 
       status: 'Approved' 
     }).populate('user', 'name email');
 
-    for (const app of appointments) {
+    for (const appItem of appointments) {
        await sendEmail({
-          email: app.user.email,
-          subject: `🔔 Reminder: Appointment Tomorrow for ${app.petName}`,
+          email: appItem.user.email,
+          subject: `🔔 Reminder: Appointment Tomorrow for ${appItem.petName}`,
           html: `<div style="font-family: sans-serif; padding: 20px; border: 2px solid #4f46e5; border-radius: 20px;">
                   <h2 style="color: #4f46e5;">See you tomorrow! 🐾</h2>
-                  <p>Hi <b>${app.user.name}</b>, aaj se 24 ghante baad aapke pet ka visit scheduled hai.</p>
-                  <p><b>Time:</b> ${app.time}</p>
+                  <p>Hi <b>${appItem.user.name}</b>, aaj se 24 ghante baad aapke pet ka visit scheduled hai.</p>
+                  <p><b>Time:</b> ${appItem.time}</p>
                 </div>`
         });
     }
 
-    // 🏨 2. Hostel Checkout Reminders (24h before checkout)
     const upcomingCheckouts = await Hostel.find({
       checkOutDate: targetDateStr,
       status: 'Checked-In'
@@ -80,12 +78,10 @@ cron.schedule('0 * * * *', async () => {
         html: `<div style="font-family: sans-serif; padding: 20px; border: 2px solid #10b981; border-radius: 20px;">
                 <h2 style="color: #10b981;">Resort Stay Ending 🏨</h2>
                 <p>Hi <b>${stay.owner.name}</b>, aapke pet <b>${stay.petName}</b> ka resort stay kal khatam ho raha hai.</p>
-                <p>Kripya kal samay se aakar apna pet collect kar lein. Humne stay ka bill generate kar diya hai.</p>
               </div>`
       });
     }
-
-    console.log(`✅ Automated tasks completed for date: ${targetDateStr}`);
+    console.log(`✅ Automated tasks completed`);
   } catch (error) {
     console.error('❌ Cron Job Error:', error);
   }
@@ -100,26 +96,21 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/orders', orderRoutes); 
 app.use('/api/hostel', hostelRoutes); 
 
-// Root Route
 app.get('/', (req, res) => {
   res.status(200).json({ status: 'success', message: 'PetVeda API is live 🐾' });
 });
 
-// ✅ Route Not Found (404) Handler
-app.use((req, res, next) => {
+app.use((req, res) => {
   res.status(404).json({ message: `Route not found - ${req.originalUrl}` });
 });
 
-// Global Error Middleware
-app.use((err, req, res, next) => {
-  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-  res.status(statusCode).json({
-    message: err.message,
-    stack: process.env.NODE_ENV === 'production' ? null : err.stack,
-  });
-});
-
+// Server listener setup
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`✅ Server running on port ${PORT}`);
+    });
+}
+
+// ✅ VERCEL EXPORT
+export default app;
