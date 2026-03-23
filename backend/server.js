@@ -26,7 +26,7 @@ connectDB();
 
 const app = express();
 
-// ✅ CORS Updated (Production ke liye zaroori hai)
+// ✅ CORS: Production mein frontend URL dalna behtar hai, abhi ke liye '*' allow hai
 app.use(cors({
   origin: '*', 
   credentials: true
@@ -40,7 +40,8 @@ const __dirname = path.resolve();
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
 // ---------------------------------------------------------
-// ⏰ AUTOMATED EMAIL CRON JOB (Every Hour check)
+// ⏰ AUTOMATED EMAIL CRON JOB
+// NOTE: Vercel par node-cron tabhi chalta hai jab koi API hit ho.
 // ---------------------------------------------------------
 cron.schedule('0 * * * *', async () => {
   console.log('🔍 Running Scheduled Reminders...');
@@ -49,23 +50,25 @@ cron.schedule('0 * * * *', async () => {
     tomorrow.setDate(tomorrow.getDate() + 1);
     const targetDateStr = tomorrow.toISOString().split('T')[0];
     
+    // 🏥 1. Appointment Reminders
     const appointments = await Appointment.find({ 
       date: targetDateStr, 
       status: 'Approved' 
     }).populate('user', 'name email');
 
-    for (const app of appointments) {
+    for (const appItem of appointments) {
        await sendEmail({
-          email: app.user.email,
-          subject: `🔔 Reminder: Appointment Tomorrow for ${app.petName}`,
+          email: appItem.user.email,
+          subject: `🔔 Reminder: Appointment Tomorrow for ${appItem.petName}`,
           html: `<div style="font-family: sans-serif; padding: 20px; border: 2px solid #4f46e5; border-radius: 20px;">
                   <h2 style="color: #4f46e5;">See you tomorrow! 🐾</h2>
-                  <p>Hi <b>${app.user.name}</b>, aaj se 24 ghante baad aapke pet ka visit scheduled hai.</p>
-                  <p><b>Time:</b> ${app.time}</p>
+                  <p>Hi <b>${appItem.user.name}</b>, aaj se 24 ghante baad aapke pet ka visit scheduled hai.</p>
+                  <p><b>Time:</b> ${appItem.time}</p>
                 </div>`
         });
     }
 
+    // 🏨 2. Hostel Checkout Reminders
     const upcomingCheckouts = await Hostel.find({
       checkOutDate: targetDateStr,
       status: 'Checked-In'
@@ -78,11 +81,10 @@ cron.schedule('0 * * * *', async () => {
         html: `<div style="font-family: sans-serif; padding: 20px; border: 2px solid #10b981; border-radius: 20px;">
                 <h2 style="color: #10b981;">Resort Stay Ending 🏨</h2>
                 <p>Hi <b>${stay.owner.name}</b>, aapke pet <b>${stay.petName}</b> ka resort stay kal khatam ho raha hai.</p>
-                <p>Kripya kal samay se aakar apna pet collect kar lein. Humne stay ka bill generate kar diya hai.</p>
+                <p>Kripya kal samay se aakar apna pet collect kar lein.</p>
               </div>`
       });
     }
-
     console.log(`✅ Automated tasks completed for date: ${targetDateStr}`);
   } catch (error) {
     console.error('❌ Cron Job Error:', error);
@@ -117,10 +119,15 @@ app.use((err, req, res, next) => {
   });
 });
 
+// ✅ Vercel ke liye serverless function setup
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-});
 
-// ✅ Vercel ke liye export add kiya
+// Local development ke liye app.listen kaam karega
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`✅ Server running on port ${PORT}`);
+    });
+}
+
+// ✅ Ye sabse zaroori hai Vercel ke liye
 export default app;
