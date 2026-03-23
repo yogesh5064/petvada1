@@ -1,7 +1,9 @@
 import path from 'path';
 import dotenv from 'dotenv'; 
 dotenv.config();           
-
+// Vercel Force Deploy Test 
+import path from 'path';
+// ... baaki pura code same rehne dein
 import express from 'express';
 import cors from 'cors';
 import cron from 'node-cron'; 
@@ -105,12 +107,12 @@ app.use((req, res) => {
 });
 
 // Server listener setup
-const PORT = process.env.PORT || 5000;
-if (process.env.NODE_ENV !== 'production') {
+const PORT = process.env.PORT || 4000;
+
     app.listen(PORT, () => {
         console.log(`✅ Server running on port ${PORT}`);
     });
-}
+
 
 // ✅ VERCEL EXPORT
 export default app;
