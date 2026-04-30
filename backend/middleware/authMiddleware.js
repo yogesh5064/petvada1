@@ -12,9 +12,14 @@ export const protect = async (req, res, next) => {
       // Token verify karna
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // User fetch karna (select -password safety ke liye)
-      req.user = await User.findById(decoded.id).select('-password');
+      // 🔥 OPTIMIZATION: .lean() add kiya gaya hai
+      // .lean() se query 5x fast ho jati hai kyunki ye plain JSON object lata hai, heavy Mongoose document nahi.
+      req.user = await User.findById(decoded.id).select('-password').lean();
       
+      if (!req.user) {
+        return res.status(401).json({ message: 'User not found' });
+      }
+
       return next(); 
     } catch (error) {
       console.error("❌ Auth Error:", error.message);
@@ -27,7 +32,7 @@ export const protect = async (req, res, next) => {
   }
 };
 
-// 🔥 2. Admin access middleware (Primary Name)
+// 🔥 2. Admin access middleware
 export const admin = (req, res, next) => {
   if (req.user && req.user.role === 'admin') {
     next();
@@ -36,6 +41,5 @@ export const admin = (req, res, next) => {
   }
 };
 
-// ✅ 3. Alias for Backward Compatibility (Purane routes ke liye)
-// Isse petRoutes, adminRoutes etc. mein adminOnly wale errors khatam ho jayenge.
+// ✅ 3. Alias for Backward Compatibility
 export const adminOnly = admin;

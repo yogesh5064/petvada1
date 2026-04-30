@@ -4,6 +4,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { User, Mail, Lock, UserPlus, Loader2, PawPrint, ShieldCheck, ChevronLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://petvada1.onrender.com').replace(/\/$/, '');
+
 const Signup = () => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -20,13 +22,13 @@ const Signup = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await axios.post('https://petvada1.onrender.com/api/users/send-otp', { 
+      const { data } = await axios.post(`${API_BASE_URL}/api/users/send-otp`, { 
         email: formData.email 
       });
       toast.success(data.message || "OTP sent! Check your email. 📩");
       setStep(2);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to send OTP");
+      toast.error(error.response?.data?.message || "Failed to send OTP. Please check backend URL/deployment.");
     } finally {
       setLoading(false);
     }
@@ -38,7 +40,7 @@ const Signup = () => {
     
     setLoading(true);
     try {
-      const { data } = await axios.post('https://petvada1.onrender.com/api/users/verify-signup', formData);
+      const { data } = await axios.post(`${API_BASE_URL}/api/users/verify-signup`, formData);
 
       if (data && data.token) {
         // ✅ STEP 1: Storage update (Data save kar rahe hain)

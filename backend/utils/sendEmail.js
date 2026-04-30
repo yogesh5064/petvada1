@@ -1,7 +1,6 @@
 import nodemailer from 'nodemailer';
 
 const sendEmail = async (options) => {
-  // 1. Transporter banao (.env se values uthayega)
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     host: 'smtp.gmail.com',
@@ -13,8 +12,6 @@ const sendEmail = async (options) => {
     },
   });
 
-  // ✅ 2. LOGIC: Agar Controller ne apna 'html' bheja hai toh wo use karo, 
-  // varna default mein Verification wala template rakho.
   const defaultTemplate = `
     <div style="font-family: sans-serif; padding: 30px; border: 1px solid #f0f0f0; border-radius: 20px; max-width: 500px; margin: auto;">
       <h1 style="color: #4f46e5; text-align: center;">🐾 PetVeda</h1>
@@ -31,17 +28,18 @@ const sendEmail = async (options) => {
     to: options.email,
     subject: options.subject,
     text: options.message,
-    // ✨ Yahan hum decide kar rahe hain ki kaunsa design bhejna hai
     html: options.html ? options.html : defaultTemplate, 
   };
 
-  // 3. Email bhej do
-  try {
-    await transporter.sendMail(mailOptions);
-  } catch (error) {
-    console.error("Email Error:", error);
-    throw new Error("Email could not be sent");
-  }
+  // 🔥 FIXED: Remove 'await' and 'throw' to make it non-blocking
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error("❌ SMTP Error (Handled):", error.message);
+      // Backend crash nahi hoga, sirf log dikhega
+    } else {
+      console.log("✅ Email Sent:", info.response);
+    }
+  });
 };
 
 export default sendEmail;

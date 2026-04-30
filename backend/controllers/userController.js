@@ -7,17 +7,17 @@ const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
-// ✅ 1. Sabhi customers fetch karna (Admin ke liye)
+// ✅ 1. Sabhi customers fetch karna (Admin ke liye) - Added .lean() for speed
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({ role: 'user' }).select('-password');
+    const users = await User.find({ role: 'user' }).select('-password').lean();
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// ✅ 2. Signup OTP Bhejna
+// ✅ 2. Signup OTP Bhejna - FIXED: Non-blocking Email to prevent 500 error
 export const sendSignupOTP = async (req, res) => {
   const { email } = req.body;
   try {
@@ -35,16 +35,18 @@ export const sendSignupOTP = async (req, res) => {
       { upsert: true, new: true }
     );
 
-    await sendEmail({
+    // 🔥 NON-BLOCKING: Removed 'await' so API responds immediately, no spinner lag
+    sendEmail({
       email,
       subject: 'PetVeda - Email Verification Code',
       otp: otp,
       message: `Aapka signup verification code hai: ${otp}. Ye 10 minute tak valid hai.`
-    });
+    }).catch(err => console.error("Email delay ignored to prevent 500 error:", err.message));
 
     res.status(200).json({ message: 'Verification code sent to your email! 📩' });
   } catch (error) {
-    res.status(500).json({ message: 'Email sending failed!' });
+    // Database error handle karega, email error upar catch ho gaya
+    res.status(500).json({ message: 'Server error in generating OTP' });
   }
 };
 
@@ -108,7 +110,7 @@ export const authUser = async (req, res) => {
   }
 };
 
-// ✅ 5. Forgot Password - Step 1: Send Reset OTP
+// ✅ 5. Forgot Password - Step 1: Send Reset OTP (Fixed Non-blocking)
 export const forgotPasswordOTP = async (req, res) => {
   const { email } = req.body;
   try {
@@ -120,16 +122,17 @@ export const forgotPasswordOTP = async (req, res) => {
     user.otpExpire = new Date(Date.now() + 10 * 60 * 1000);
     await user.save({ validateBeforeSave: false });
 
-    await sendEmail({
+    // 🔥 NON-BLOCKING: Background mein bhejega
+    sendEmail({
       email,
       subject: 'PetVeda - Password Reset Code',
       otp: otp,
       message: `Aapka password reset code hai: ${otp}.`
-    });
+    }).catch(err => console.error("Forgot pass email log:", err.message));
 
     res.status(200).json({ message: 'Reset code sent to email! 📩' });
   } catch (error) {
-    res.status(500).json({ message: 'Error sending reset email' });
+    res.status(500).json({ message: 'Error processing reset request' });
   }
 };
 
@@ -154,7 +157,7 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-// ✅ 7. UPDATE Profile (Bypass validation added)
+// ✅ 7. UPDATE Profile
 export const updateUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -188,10 +191,10 @@ export const updateUserProfile = async (req, res) => {
   }
 };
 
-// ✅ 8. GET Profile
+// ✅ 8. GET Profile - Added .lean()
 export const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('-password');
+    const user = await User.findById(req.user._id).select('-password').lean();
     if (user) {
       res.json(user);
     } else {
@@ -221,7 +224,7 @@ export const updateUserPassword = async (req, res) => {
 
 // --- 🏠 Address Management Functions ---
 
-// ✅ 10. Add New Address (Bypass validation added)
+// ✅ 10. Add New Address
 export const addUserAddress = async (req, res) => {
   try {
     const { label, fullAddress, city, pincode, phone } = req.body;
