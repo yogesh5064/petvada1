@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 
 const sendEmail = async (options) => {
+  // 1. Transporter configuration
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     host: 'smtp.gmail.com',
@@ -31,15 +32,17 @@ const sendEmail = async (options) => {
     html: options.html ? options.html : defaultTemplate, 
   };
 
-  // 🔥 FIXED: Remove 'await' and 'throw' to make it non-blocking
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error("❌ SMTP Error (Handled):", error.message);
-      // Backend crash nahi hoga, sirf log dikhega
-    } else {
-      console.log("✅ Email Sent:", info.response);
-    }
-  });
+  // 🛠️ DEBUGGING UPDATE: Ise wapas 'await' wala banate hain taaki 
+  // userController.js ko error catch karne ka mauka mile.
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Email Sent successfully:", info.response);
+    return info;
+  } catch (error) {
+    console.error("❌ SMTP Error (Found during debug):", error.message);
+    // Ye error throw karega taaki controller ka catch block chale
+    throw error; 
+  }
 };
 
 export default sendEmail;
