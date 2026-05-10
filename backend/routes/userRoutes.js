@@ -1,52 +1,123 @@
 import express from 'express';
-import { 
-  authUser, 
-  sendSignupOTP, 
-  verifyOTPAndSignup, 
-  getUserProfile, 
-  updateUserProfile, 
-  getAllUsers, 
-  forgotPasswordOTP, 
+
+import {
+  authUser,
+  sendSignupOTP,
+  verifyOTPAndSignup,
+  getUserProfile,
+  updateUserProfile,
+  getAllUsers,
+  forgotPasswordOTP,
   resetPassword,
   updateUserPassword,
   addUserAddress,
   deleteUserAddress,
   setDefaultAddress
 } from '../controllers/userController.js';
+
 import { protect, admin } from '../middleware/authMiddleware.js';
 
-// ✅ Order Controller imports
+// ✅ ORDER CONTROLLERS
 import { getMyOrders, addOrderItems } from '../controllers/orderController.js';
+
+// ✅ EMAIL DEBUG IMPORT
+import sendEmail from '../utils/sendEmail.js';
 
 const router = express.Router();
 
-// --- 🔐 AUTH & VERIFICATION (Public) ---
-router.post('/login', authUser);
-router.post('/send-otp', sendSignupOTP);           
-router.post('/verify-signup', verifyOTPAndSignup); 
-router.post('/forgot-password-otp', forgotPasswordOTP); 
-router.post('/reset-password', resetPassword);     
 
-// --- 👤 PROFILE MANAGEMENT (Private) ---
+// =====================================================
+// 🔐 AUTH ROUTES
+// =====================================================
+
+router.post('/login', authUser);
+
+router.post('/send-otp', sendSignupOTP);
+
+router.post('/verify-signup', verifyOTPAndSignup);
+
+router.post('/forgot-password-otp', forgotPasswordOTP);
+
+router.post('/reset-password', resetPassword);
+
+
+// =====================================================
+// 🧪 TEST EMAIL ROUTE
+// =====================================================
+
+router.get('/test-email', async (req, res) => {
+
+  try {
+
+    await sendEmail({
+      email: 'ykumawat8690@gmail.com',
+      subject: '🐾 PetVeda SMTP Test',
+      otp: '123456'
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Email sent successfully'
+    });
+
+  } catch (error) {
+
+    console.log('❌ TEST EMAIL ERROR');
+    console.log(error);
+
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+
+// =====================================================
+// 👤 PROFILE ROUTES
+// =====================================================
+
 router.route('/profile')
-  .get(protect, getUserProfile) 
+  .get(protect, getUserProfile)
   .put(protect, updateUserProfile);
 
-// ✅ FIX 1: Frontend '/api/users/change-password' call karta hai, isliye yahan change kiya
-router.route('/change-password').put(protect, updateUserPassword);
 
-// --- 🏠 ADDRESS MANAGEMENT (Private) ---
+// =====================================================
+// 🔑 PASSWORD ROUTES
+// =====================================================
+
+router.route('/change-password')
+  .put(protect, updateUserPassword);
+
+
+// =====================================================
+// 🏠 ADDRESS ROUTES
+// =====================================================
+
 router.post('/add-address', protect, addUserAddress);
+
 router.delete('/address/:id', protect, deleteUserAddress);
 
-// ✅ FIX 2: Profile.jsx mein URL '/address/default/:id' hai, isliye yahan match kiya
 router.put('/address/default/:id', protect, setDefaultAddress);
 
-// --- 🛒 SHOPPING & ORDERS (Private) ---
-router.route('/my-orders').get(protect, getMyOrders); 
-router.route('/orders').post(protect, addOrderItems);
 
-// --- 👑 ADMIN ONLY ---
-router.route('/').get(protect, admin, getAllUsers);
+// =====================================================
+// 🛒 ORDER ROUTES
+// =====================================================
+
+router.route('/my-orders')
+  .get(protect, getMyOrders);
+
+router.route('/orders')
+  .post(protect, addOrderItems);
+
+
+// =====================================================
+// 👑 ADMIN ROUTES
+// =====================================================
+
+router.route('/')
+  .get(protect, admin, getAllUsers);
+
 
 export default router;
