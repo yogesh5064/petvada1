@@ -1,26 +1,26 @@
 import nodemailer from 'nodemailer';
 
-const sendEmail = async (options) => {
+// ==================================================
+// TRANSPORTER (GLOBAL)
+// ==================================================
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
+const sendEmail = async (options) => {
   try {
 
     // ==================================================
     // VALIDATION
     // ==================================================
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      throw new Error('EMAIL_USER or EMAIL_PASS missing in ENV');
+      console.error('❌ EMAIL ENV Missing');
+      return false;
     }
-
-    // ==================================================
-    // TRANSPORTER
-    // ==================================================
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
 
     // ==================================================
     // EMAIL TEMPLATE
@@ -57,19 +57,24 @@ const sendEmail = async (options) => {
     };
 
     // ==================================================
-    // SEND EMAIL
+    // SEND EMAIL (NON-BLOCKING)
     // ==================================================
-    const info = await transporter.sendMail(mailOptions);
+    transporter.sendMail(mailOptions)
+      .then(info => {
+        console.log('✅ Email sent:', info.response);
+      })
+      .catch(error => {
+        console.error('❌ Email Error:', error.message);
+      });
 
-    console.log('✅ Email sent:', info.response);
-
-    return info;
+    // API ko turant response
+    return true;
 
   } catch (error) {
 
-    console.error('❌ EMAIL ERROR:', error);
+    console.error('❌ EMAIL ERROR:', error.message);
 
-    throw error;
+    return false;
   }
 };
 
