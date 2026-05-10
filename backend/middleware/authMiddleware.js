@@ -14,7 +14,7 @@ export const protect = async (req, res, next) => {
 
       // 🔥 OPTIMIZATION: .lean() add kiya gaya hai
       // .lean() se query 5x fast ho jati hai kyunki ye plain JSON object lata hai, heavy Mongoose document nahi.
-      req.user = await User.findById(decoded.id).select('-password').lean();
+      req.user = await User.findById(decoded.id).select('-password');
       
       if (!req.user) {
         return res.status(401).json({ message: 'User not found' });

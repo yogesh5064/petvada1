@@ -1,77 +1,349 @@
 import mongoose from 'mongoose';
 
-const appointmentSchema = mongoose.Schema({
-  user: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    required: true, 
-    ref: 'User' 
+
+// =======================================================
+// 💊 PRESCRIPTION SUB SCHEMA
+// =======================================================
+
+const prescriptionSchema = new mongoose.Schema({
+
+  medicine: {
+    type: String,
+    trim: true
   },
-  petId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Pet' 
+
+  instructions: {
+    type: String,
+    trim: true
   },
-  petName: { type: String, required: true },
-  petType: { 
-    type: String, 
-    required: true, 
-    // ✅ FIXED: Case-sensitivity issues handle karne ke liye lowercase rakha hai
-    enum: ['Dog', 'Cat', 'Rabbit', 'dog', 'cat', 'rabbit'] 
+
+  addedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
-  breed: { type: String }, 
-  category: { 
-    type: String, 
+
+  addedAt: {
+    type: Date,
+    default: Date.now
+  }
+
+}, { _id: false });
+
+
+// =======================================================
+// 📍 LOCATION SUB SCHEMA
+// =======================================================
+
+const locationSchema = new mongoose.Schema({
+
+  lat: {
+    type: Number
+  },
+
+  lng: {
+    type: Number
+  }
+
+}, { _id: false });
+
+
+// =======================================================
+// 🐾 APPOINTMENT SCHEMA
+// =======================================================
+
+const appointmentSchema = new mongoose.Schema({
+
+  // =====================================================
+  // 👤 USER INFO
+  // =====================================================
+
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
     required: true,
-    // ✅ FIXED: 'HOSTEL' aur 'Hostel' dono allow kiye hain taaki 400 error na aaye
-    enum: ["Treatment", "Grooming", "Vaccination", "Hostel", "HOSTEL", "TREATMENT", "GROOMING"]
+    ref: 'User',
+    index: true
   },
-  subCategory: { type: [String] },
-  days: { type: Number },
-  vaccineType: { type: String },
-  
-  // ✅ TIP: Date ko String rakhna asan hota hai agar aap sirf formatting display kar rahe ho
-  date: { type: String, required: true }, 
-  time: { type: String, required: true },
 
-  status: { 
-    type: String, 
+
+  // =====================================================
+  // 🐶 PET INFO
+  // =====================================================
+
+  petId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Pet',
+    index: true
+  },
+
+  petName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+
+  petType: {
+    type: String,
+    required: true,
+
+    enum: [
+      'Dog',
+      'Cat',
+      'Rabbit'
+    ]
+  },
+
+  breed: {
+    type: String,
+    trim: true
+  },
+
+
+  // =====================================================
+  // 🏥 APPOINTMENT CATEGORY
+  // =====================================================
+
+  category: {
+    type: String,
+    required: true,
+
+    enum: [
+      'Treatment',
+      'Grooming',
+      'Vaccination',
+      'Hostel'
+    ]
+  },
+
+  subCategory: [{
+    type: String,
+    trim: true
+  }],
+
+  vaccineType: {
+    type: String,
+    trim: true
+  },
+
+  reason: {
+    type: String,
+    default: 'General Checkup',
+    trim: true
+  },
+
+
+  // =====================================================
+  // 📅 DATE & TIME
+  // =====================================================
+
+  date: {
+    type: String,
+    required: true
+  },
+
+  time: {
+    type: String,
+    required: true
+  },
+
+
+  // =====================================================
+  // 🚦 STATUS
+  // =====================================================
+
+  status: {
+    type: String,
+
     default: 'Pending',
-    // ✅ FIXED: 'Checked-In' add kiya hai taaki Resort Desk par pet dikhe
-    enum: ['Pending', 'Approved', 'Checked-In', 'Completed', 'Cancelled']
+
+    enum: [
+      'Pending',
+      'Approved',
+      'Checked-In',
+      'In-Progress',
+      'Completed',
+      'Cancelled',
+      'Rejected'
+    ]
   },
 
-  reason: { 
-    type: String, 
-    default: "General Checkup" 
-  },
 
-  prescription: {
-    medicine: { type: String },
-    instructions: { type: String },
-    addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
-  },
+  // =====================================================
+  // 💊 PRESCRIPTION
+  // =====================================================
 
-  visitType: { 
-    type: String, 
+  prescription: prescriptionSchema,
+
+
+  // =====================================================
+  // 🚗 VISIT TYPE
+  // =====================================================
+
+  visitType: {
+    type: String,
+
     default: 'Walk-in',
-    enum: ['Walk-in', 'Home Visit'] 
+
+    enum: [
+      'Walk-in',
+      'Home Visit'
+    ]
   },
 
-  address: { 
-    type: String 
+
+  // =====================================================
+  // 🏠 ADDRESS
+  // =====================================================
+
+  address: {
+    type: String,
+    trim: true
   },
 
-  location: {
-    lat: { type: Number },
-    lng: { type: Number }
+  location: locationSchema,
+
+
+  // =====================================================
+  // 🏨 HOSTEL DATA
+  // =====================================================
+
+  checkInDate: {
+    type: String
   },
 
-  // ✨ --- 🏨 HOSTEL SPECIFIC STUFF --- ✨
-  checkInDate: { type: String }, // Date object ki jagah String use karein frontend sync ke liye
-  checkOutDate: { type: String },
-  checkInTime: { type: String },
-  checkOutTime: { type: String }
+  checkOutDate: {
+    type: String
+  },
 
-}, { timestamps: true });
+  checkInTime: {
+    type: String
+  },
 
-const Appointment = mongoose.model('Appointment', appointmentSchema);
+  checkOutTime: {
+    type: String
+  },
+
+  days: {
+    type: Number,
+    default: 1
+  },
+
+
+  // =====================================================
+  // 💰 PAYMENT / BILLING
+  // =====================================================
+
+  consultationFee: {
+    type: Number,
+    default: 0
+  },
+
+  totalAmount: {
+    type: Number,
+    default: 0
+  },
+
+  paymentStatus: {
+    type: String,
+
+    enum: [
+      'Pending',
+      'Paid',
+      'Partial',
+      'Refunded'
+    ],
+
+    default: 'Pending'
+  },
+
+
+  // =====================================================
+  // 📝 ADMIN NOTES
+  // =====================================================
+
+  adminNotes: {
+    type: String,
+    trim: true
+  },
+
+
+  // =====================================================
+  // ⭐ FEEDBACK
+  // =====================================================
+
+  rating: {
+    type: Number,
+    min: 1,
+    max: 5
+  },
+
+  review: {
+    type: String,
+    trim: true
+  }
+
+}, {
+  timestamps: true
+});
+
+
+// =======================================================
+// 🔍 DATABASE INDEXES
+// =======================================================
+
+appointmentSchema.index({
+  user: 1,
+  createdAt: -1
+});
+
+appointmentSchema.index({
+  status: 1
+});
+
+appointmentSchema.index({
+  category: 1
+});
+
+appointmentSchema.index({
+  petName: 1
+});
+
+
+// =======================================================
+// ⚡ PRE SAVE HOOK
+// =======================================================
+
+appointmentSchema.pre('save', function(next) {
+
+  // Auto calculate hostel days
+  if (
+    this.category === 'Hostel' &&
+    this.checkInDate &&
+    this.checkOutDate
+  ) {
+
+    const inDate = new Date(this.checkInDate);
+    const outDate = new Date(this.checkOutDate);
+
+    const diff =
+      Math.ceil(
+        (outDate - inDate) /
+        (1000 * 60 * 60 * 24)
+      );
+
+    this.days = diff > 0 ? diff : 1;
+  }
+
+  next();
+});
+
+
+// =======================================================
+// 🚀 EXPORT MODEL
+// =======================================================
+
+const Appointment = mongoose.model(
+  'Appointment',
+  appointmentSchema
+);
+
 export default Appointment;
