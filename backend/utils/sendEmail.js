@@ -1,52 +1,34 @@
 import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
 
-// ======================================================
-// CREATE TRANSPORTER
-// ======================================================
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
-// ======================================================
-// VERIFY SMTP ON SERVER START
-// ======================================================
-
-transporter.verify((error, success) => {
-
-  if (error) {
-
-    console.log('❌ SMTP VERIFY ERROR');
-    console.log(error);
-
-  } else {
-
-    console.log('✅ SMTP SERVER READY');
-
-  }
-});
-
-// ======================================================
-// SEND EMAIL FUNCTION
-// ======================================================
+dotenv.config();
 
 const sendEmail = async (options) => {
-
   try {
 
-    console.log('📨 Sending Email To:', options.email);
+    const EMAIL_USER = process.env.EMAIL_USER?.trim();
+    const EMAIL_PASS = process.env.EMAIL_PASS?.trim();
+
+    console.log("SMTP USER:", EMAIL_USER);
+    console.log("SMTP PASS EXISTS:", !!EMAIL_PASS);
+
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: EMAIL_USER,
+        pass: EMAIL_PASS,
+      },
+    });
 
     const mailOptions = {
-      from: `"PetVeda Support" <${process.env.EMAIL_USER}>`,
+      from: `"PetVeda Support" <${EMAIL_USER}>`,
       to: options.email,
       subject: options.subject || 'PetVeda Notification',
-
-      html: options.html || `
+      html:
+        options.html ||
+        `
         <h2>PetVeda OTP</h2>
         <h1>${options.otp}</h1>
       `,
@@ -54,14 +36,13 @@ const sendEmail = async (options) => {
 
     const info = await transporter.sendMail(mailOptions);
 
-    console.log('✅ EMAIL SENT');
-    console.log(info.response);
+    console.log("✅ EMAIL SENT:", info.response);
 
     return info;
 
   } catch (error) {
 
-    console.log('❌ SEND MAIL ERROR');
+    console.log("❌ EMAIL ERROR FULL:");
     console.log(error);
 
     throw error;
