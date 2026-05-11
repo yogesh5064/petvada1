@@ -13,24 +13,33 @@ const sendEmail = async (options) => {
     console.log("SMTP PASS EXISTS:", !!EMAIL_PASS);
 
     const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
+      service: 'gmail',
+
       auth: {
         user: EMAIL_USER,
         pass: EMAIL_PASS,
       },
     });
 
+    await transporter.verify();
+
+    console.log("✅ SMTP VERIFIED");
+
     const mailOptions = {
       from: `"PetVeda Support" <${EMAIL_USER}>`,
       to: options.email,
       subject: options.subject || 'PetVeda Notification',
+
       html:
         options.html ||
         `
-        <h2>PetVeda OTP</h2>
-        <h1>${options.otp}</h1>
+        <div style="font-family:sans-serif;padding:20px;">
+          <h2>🐾 PetVeda OTP</h2>
+
+          <h1 style="color:#4f46e5;">
+            ${options.otp}
+          </h1>
+        </div>
       `,
     };
 
