@@ -1,8 +1,15 @@
 import path from 'path';
 import dotenv from 'dotenv';
 dotenv.config();
+
+// =======================
+// 🔴 ENV DEBUG (IMPORTANT)
+// =======================
 console.log("EMAIL_USER:", process.env.EMAIL_USER);
 console.log("EMAIL_PASS:", process.env.EMAIL_PASS);
+
+console.log("RESEND KEY EXISTS:", !!process.env.RESEND_API_KEY);
+console.log("RESEND KEY PREVIEW:", process.env.RESEND_API_KEY?.slice(0, 8));
 
 import express from 'express';
 import cors from 'cors';
@@ -63,21 +70,14 @@ app.use(cors({
 // BODY PARSER
 // ======================================================
 app.use(express.json({ limit: '20mb' }));
-
-app.use(express.urlencoded({
-  extended: true,
-  limit: '20mb'
-}));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
 // ======================================================
-// STATIC UPLOADS FOLDER
+// STATIC FILES
 // ======================================================
 const __dirname = path.resolve();
 
-app.use(
-  '/uploads',
-  express.static(path.join(__dirname, 'uploads'))
-);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ======================================================
 // ROOT ROUTE
@@ -93,17 +93,11 @@ app.get('/', (req, res) => {
 // API ROUTES
 // ======================================================
 app.use('/api/users', userRoutes);
-
 app.use('/api/admin', adminRoutes);
-
 app.use('/api/pets', petRoutes);
-
 app.use('/api/products', productRoutes);
-
 app.use('/api/appointments', appointmentRoutes);
-
 app.use('/api/orders', orderRoutes);
-
 app.use('/api/hostel', hostelRoutes);
 
 // ======================================================
@@ -116,14 +110,11 @@ cron.schedule('0 * * * *', async () => {
   try {
 
     const tomorrow = new Date();
-
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     const targetDateStr = tomorrow.toISOString().split('T')[0];
 
-    // ==================================================
-    // APPOINTMENT REMINDERS
-    // ==================================================
+    // ================= APPOINTMENTS =================
     const appointments = await Appointment.find({
       date: targetDateStr,
       status: 'Approved'
@@ -133,43 +124,33 @@ cron.schedule('0 * * * *', async () => {
 
       try {
 
-        await sendEmail({
+        console.log("Sending email to:", appItem.user.email);
+
+        const response = await sendEmail({
           email: appItem.user.email,
           subject: `🔔 Reminder: Appointment Tomorrow for ${appItem.petName}`,
           html: `
             <div style="font-family:sans-serif;padding:20px;border-radius:20px;border:1px solid #ddd;">
-              <h2 style="color:#4f46e5;">
-                🐾 Appointment Reminder
-              </h2>
+              <h2 style="color:#4f46e5;">🐾 Appointment Reminder</h2>
 
-              <p>
-                Hi <b>${appItem.user.name}</b>,
-              </p>
+              <p>Hi <b>${appItem.user.name}</b>,</p>
 
-              <p>
-                Aapke pet ka appointment kal scheduled hai.
-              </p>
+              <p>Aapke pet ka appointment kal scheduled hai.</p>
 
-              <p>
-                <b>Pet:</b> ${appItem.petName}
-              </p>
-
-              <p>
-                <b>Time:</b> ${appItem.time}
-              </p>
+              <p><b>Pet:</b> ${appItem.petName}</p>
+              <p><b>Time:</b> ${appItem.time}</p>
             </div>
           `
         });
 
-      } catch (emailError) {
+        console.log("EMAIL RESPONSE:", response);
 
+      } catch (emailError) {
         console.log('Appointment Email Error:', emailError.message);
       }
     }
 
-    // ==================================================
-    // HOSTEL CHECKOUT REMINDERS
-    // ==================================================
+    // ================= HOSTEL =================
     const upcomingCheckouts = await Hostel.find({
       checkOutDate: targetDateStr,
       status: 'Checked-In'
@@ -179,28 +160,25 @@ cron.schedule('0 * * * *', async () => {
 
       try {
 
-        await sendEmail({
+        console.log("Sending hostel email to:", stay.owner.email);
+
+        const response = await sendEmail({
           email: stay.owner.email,
           subject: `🏨 ${stay.petName}'s Stay Ends Tomorrow`,
           html: `
             <div style="font-family:sans-serif;padding:20px;border-radius:20px;border:1px solid #ddd;">
-              <h2 style="color:#10b981;">
-                🏨 Resort Reminder
-              </h2>
+              <h2 style="color:#10b981;">🏨 Resort Reminder</h2>
 
-              <p>
-                Hi <b>${stay.owner.name}</b>,
-              </p>
+              <p>Hi <b>${stay.owner.name}</b>,</p>
 
-              <p>
-                Aapke pet <b>${stay.petName}</b> ka stay kal complete ho raha hai.
-              </p>
+              <p>Aapke pet <b>${stay.petName}</b> ka stay kal complete ho raha hai.</p>
             </div>
           `
         });
 
-      } catch (emailError) {
+        console.log("EMAIL RESPONSE:", response);
 
+      } catch (emailError) {
         console.log('Hostel Email Error:', emailError.message);
       }
     }
@@ -208,7 +186,6 @@ cron.schedule('0 * * * *', async () => {
     console.log('✅ Reminder Cron Completed');
 
   } catch (error) {
-
     console.error('❌ CRON ERROR:', error);
   }
 });
@@ -227,7 +204,6 @@ app.use((req, res) => {
 // GLOBAL ERROR HANDLER
 // ======================================================
 app.use((err, req, res, next) => {
-
   console.error('GLOBAL ERROR:', err);
 
   res.status(500).json({
@@ -237,7 +213,7 @@ app.use((err, req, res, next) => {
 });
 
 // ======================================================
-// SERVER LISTENER
+// SERVER
 // ======================================================
 const PORT = process.env.PORT || 4000;
 
@@ -245,7 +221,4 @@ app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
 
-// ======================================================
-// EXPORT APP
-// ======================================================
 export default app;
