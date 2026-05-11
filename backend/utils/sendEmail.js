@@ -1,31 +1,20 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 const sendEmail = async (options) => {
+
   try {
 
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
+    const response = await resend.emails.send({
 
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
+      from: 'PetVeda <onboarding@resend.dev>',
 
-      tls: {
-        rejectUnauthorized: false
-      },
-
-      family: 4 // ✅ FORCE IPV4
-    });
-
-    const mailOptions = {
-      from: `"PetVeda Support" <${process.env.EMAIL_USER}>`,
       to: options.email,
+
       subject: options.subject || 'PetVeda Notification',
 
       html:
@@ -33,20 +22,22 @@ const sendEmail = async (options) => {
         `
         <div style="font-family:sans-serif;padding:20px;">
           <h2>🐾 PetVeda OTP</h2>
-          <h1>${options.otp}</h1>
+
+          <h1 style="color:#4f46e5;">
+            ${options.otp}
+          </h1>
         </div>
         `,
-    };
+    });
 
-    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ EMAIL SENT');
+    console.log(response);
 
-    console.log("✅ EMAIL SENT:", info.response);
-
-    return info;
+    return response;
 
   } catch (error) {
 
-    console.log("❌ EMAIL ERROR:");
+    console.log('❌ EMAIL ERROR');
     console.log(error);
 
     throw error;
