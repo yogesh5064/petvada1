@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  ShoppingBag, 
-  Calendar, 
-  Hotel, 
-  LayoutDashboard, 
-  LogOut, 
+import {
+  ShoppingBag,
+  Calendar,
+  Hotel,
+  LayoutDashboard,
+  LogOut,
   Menu,
   X,
   ChevronDown,
@@ -13,87 +13,77 @@ import {
   UserCircle,
   Package,
   ReceiptText,
-  Truck 
-} from 'lucide-react'; 
+  Truck
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+
   const [isOpen, setIsOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   const dropdownRef = useRef(null);
-  
-  const rawData = localStorage.getItem('userInfo');
-  const userInfo = rawData ? JSON.parse(rawData) : null;
+
+  const userInfo = JSON.parse(localStorage.getItem('userInfo'));
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    const close = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setIsOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
   }, []);
 
-  useEffect(() => { setIsMobileMenuOpen(false); }, [location]);
+  useEffect(() => setMobileOpen(false), [location.pathname]);
 
-  const handleLogout = () => {
+  const logout = () => {
     localStorage.removeItem('userInfo');
-    toast.success("Logout ho gaya! 🐾");
+    toast.success("Logged out 🐾");
     navigate('/');
-    window.location.reload(); 
+    window.location.reload();
   };
 
-  const isActive = (path) => location.pathname === path;
+  const active = (path) =>
+    location.pathname === path
+      ? "bg-indigo-600 text-white shadow-md"
+      : "text-gray-600 hover:bg-indigo-50 hover:text-indigo-600";
 
-  const NavLinks = () => (
+  const Item = ({ to, icon, label }) => (
+    <Link
+      to={to}
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition ${active(to)}`}
+    >
+      {icon} <span>{label}</span>
+    </Link>
+  );
+
+  const MenuSection = () => (
     <>
+      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-3 mt-2">
+        {userInfo?.role === 'admin' ? "Admin Panel" : "Dashboard"}
+      </p>
+
       {userInfo?.role === 'admin' ? (
         <>
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-3 mb-2 hidden md:block">Admin Menu</p>
-          <Link to="/admin" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${isActive('/admin') ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'}`}>
-            <LayoutDashboard size={20} /> <span>Admin Panel</span>
-          </Link>
-          {/* ✅ Naya Hostel Route Admin ke liye */}
-          <Link to="/admin/hostel" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${isActive('/admin/hostel') ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'}`}>
-            <Hotel size={20} /> <span>Resort Desk</span>
-          </Link>
-          <Link to="/admin/orders" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${isActive('/admin/orders') ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'}`}>
-            <Truck size={20} /> <span>Orders</span>
-          </Link>
-          <Link to="/admin/inventory" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${isActive('/admin/inventory') ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'}`}>
-            <Package size={20} /> <span>Inventory</span>
-          </Link>
-          <Link to="/admin/billing" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${isActive('/admin/billing') ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'}`}>
-            <ReceiptText size={20} /> <span>Billing</span>
-          </Link>
-          <Link to="/admin/customers" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${isActive('/admin/customers') ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'}`}>
-            <Users size={20} /> <span>Customers</span>
-          </Link>
+          <Item to="/admin" icon={<LayoutDashboard size={18} />} label="Dashboard" />
+          <Item to="/admin/hostel" icon={<Hotel size={18} />} label="Hostel" />
+          <Item to="/admin/orders" icon={<Truck size={18} />} label="Orders" />
+          <Item to="/admin/inventory" icon={<Package size={18} />} label="Inventory" />
+          <Item to="/admin/billing" icon={<ReceiptText size={18} />} label="Billing" />
+          <Item to="/admin/customers" icon={<Users size={18} />} label="Customers" />
         </>
       ) : (
         <>
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-3 mb-2 hidden md:block">Patient Menu</p>
-          <Link to="/" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${isActive('/') ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'}`}>
-            <LayoutDashboard size={20} /> <span>Dashboard</span>
-          </Link>
-          <Link to="/appointments" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${isActive('/appointments') ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'}`}>
-            <Calendar size={20} /> <span>Visits</span>
-          </Link>
-          <Link to="/shop" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${isActive('/shop') ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'}`}>
-            <ShoppingBag size={20} /> <span>Shop</span>
-          </Link>
-          <Link to="/order-history" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${isActive('/order-history') ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'}`}>
-            <Truck size={20} /> <span>My Orders</span>
-          </Link>
-          <Link to="/hostel" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${isActive('/hostel') ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'}`}>
-            <Hotel size={20} /> <span>Hostel</span>
-          </Link>
-          <Link to="/my-hostel-stays" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${isActive('/my-hostel-stays') ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'}`}>
-            <ReceiptText size={20} /> <span>My Stays</span>
-          </Link>
+          <Item to="/" icon={<LayoutDashboard size={18} />} label="Dashboard" />
+          <Item to="/appointments" icon={<Calendar size={18} />} label="Appointments" />
+          <Item to="/shop" icon={<ShoppingBag size={18} />} label="Shop" />
+          <Item to="/order-history" icon={<Truck size={18} />} label="Orders" />
+          <Item to="/hostel" icon={<Hotel size={18} />} label="Hostel" />
+          <Item to="/my-hostel-stays" icon={<ReceiptText size={18} />} label="My Stays" />
         </>
       )}
     </>
@@ -101,53 +91,95 @@ const Navbar = () => {
 
   return (
     <>
-      {/* 📱 Mobile Top Bar */}
-      <div className="md:hidden flex items-center justify-between p-4 bg-white shadow-md fixed top-0 w-full z-[60]">
-        <Link to="/" className="text-xl font-black text-indigo-600 flex items-center">🐾 PetVeda</Link>
-        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 bg-gray-50 rounded-lg">
-          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+      {/* MOBILE TOP BAR */}
+      <div className="md:hidden fixed top-0 w-full z-50 bg-white shadow-sm flex justify-between items-center px-4 py-3">
+        <Link to="/" className="font-black text-indigo-600 text-lg">
+          🐾 PetVeda
+        </Link>
+
+        <button
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="p-2 rounded-lg bg-gray-100"
+        >
+          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
-      {/* 🏠 Sidebar Nav */}
-      <nav className={`w-64 bg-white shadow-xl h-screen fixed left-0 top-0 z-50 flex flex-col border-r border-gray-100 transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} print:hidden`}>
-        <div className="p-6 border-b border-gray-50 hidden md:block">
-          <Link to="/" className="text-2xl font-black text-indigo-600 flex items-center tracking-tighter italic">🐾 PetVeda</Link>
+      {/* SIDEBAR */}
+      <aside
+        className={`fixed top-0 left-0 h-screen w-64 bg-white border-r shadow-lg z-40 flex flex-col transition-transform duration-300
+        ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
+      >
+        {/* LOGO */}
+        <div className="p-6 border-b hidden md:block">
+          <Link className="text-2xl font-black text-indigo-600 italic">
+            🐾 PetVeda
+          </Link>
         </div>
 
+        {/* MENU */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2 mt-16 md:mt-4">
-          <NavLinks />
+          <MenuSection />
         </div>
 
-        <div className="p-4 border-t border-gray-100" ref={dropdownRef}>
+        {/* USER SECTION */}
+        <div className="p-4 border-t" ref={dropdownRef}>
           {userInfo ? (
             <div className="relative">
-              <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between bg-gray-50 border border-gray-100 p-3 rounded-2xl hover:bg-gray-100 transition">
-                <div className="flex items-center space-x-3 overflow-hidden">
-                  <div className={`w-8 h-8 flex-shrink-0 ${userInfo.role === 'admin' ? 'bg-red-500' : 'bg-indigo-600'} rounded-xl flex items-center justify-center text-white font-black text-xs`}>{userInfo.name[0].toUpperCase()}</div>
-                  <span className="font-bold text-gray-800 text-sm truncate uppercase italic tracking-tight">{userInfo.role === 'admin' ? 'Admin' : userInfo.name.split(' ')[0]}</span>
+
+              <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full flex justify-between items-center bg-gray-50 p-3 rounded-xl"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center font-bold text-xs">
+                    {userInfo.name?.[0]?.toUpperCase()}
+                  </div>
+                  <span className="font-bold text-sm truncate">
+                    {userInfo.name?.split(' ')[0]}
+                  </span>
                 </div>
-                <ChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+
+                <ChevronDown size={16} className={`${isOpen ? "rotate-180" : ""}`} />
               </button>
+
               {isOpen && (
-                <div className="absolute bottom-full left-0 w-full bg-white border border-gray-100 rounded-2xl shadow-2xl py-3 mb-2 z-50">
-                  <Link to="/profile" className="flex items-center gap-3 px-4 py-2 hover:bg-indigo-50 text-gray-700 font-semibold text-sm">
-                    <UserCircle size={16} className="text-indigo-500" /> My Profile
+                <div className="absolute bottom-full mb-2 w-full bg-white shadow-xl border rounded-xl py-2">
+
+                  <Link
+                    to="/profile"
+                    className="flex items-center gap-2 px-4 py-2 hover:bg-indigo-50 text-sm"
+                  >
+                    <UserCircle size={16} /> Profile
                   </Link>
-                  <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 font-bold text-sm">
+
+                  <button
+                    onClick={logout}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 text-sm font-semibold"
+                  >
                     <LogOut size={16} /> Logout
                   </button>
+
                 </div>
               )}
             </div>
           ) : (
-            <Link to="/login" className="block text-center bg-indigo-600 text-white w-full py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all">Join Now</Link>
+            <Link
+              to="/login"
+              className="block text-center bg-indigo-600 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest"
+            >
+              Login
+            </Link>
           )}
         </div>
-      </nav>
+      </aside>
 
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[40] md:hidden" onClick={() => setIsMobileMenuOpen(false)}></div>
+      {/* BACKDROP */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 md:hidden z-30"
+          onClick={() => setMobileOpen(false)}
+        />
       )}
     </>
   );
