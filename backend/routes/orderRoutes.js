@@ -199,3 +199,4 @@ const statusEmailTemplate = (order, updatedOrder) => {
     </div>
   `;
 };
+export default router;
