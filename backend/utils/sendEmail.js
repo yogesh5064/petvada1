@@ -12,17 +12,31 @@ const getResend = () => {
 
 const sendEmail = async ({ to, subject, html }) => {
   if (!to || !subject || !html) {
-    throw new Error('Missing email parameters');
+    throw new Error('Missing email parameters (to, subject, html required)');
   }
 
-  const resend = getResend(); // 👈 lazy init FIX
+  try {
+    const resend = getResend();
 
-  return await resend.emails.send({
-    from: 'PetVeda <onboarding@resend.dev>',
-    to,
-    subject,
-    html,
-  });
+    const response = await resend.emails.send({
+      from: 'PetVeda <onboarding@resend.dev>',
+      to,
+      subject,
+      html,
+    });
+
+    // 🔥 DEBUG LOG (IMPORTANT for OTP issue)
+    console.log('📧 Email sent response:', response);
+
+    return response;
+
+  } catch (error) {
+    console.error('❌ Email send failed:', error);
+
+    throw new Error(
+      error?.message || 'Failed to send email via Resend'
+    );
+  }
 };
 
 export default sendEmail;
