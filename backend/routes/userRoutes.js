@@ -1,123 +1,373 @@
-import express from 'express';
-
-import {
-  authUser,
-  sendSignupOTP,
-  verifyOTPAndSignup,
-  getUserProfile,
-  updateUserProfile,
-  getAllUsers,
-  forgotPasswordOTP,
-  resetPassword,
-  updateUserPassword,
-  addUserAddress,
-  deleteUserAddress,
-  setDefaultAddress
-} from '../controllers/userController.js';
-
-import { protect, admin } from '../middleware/authMiddleware.js';
-
-// ✅ ORDER CONTROLLERS
-import { getMyOrders, addOrderItems } from '../controllers/orderController.js';
-
-// ✅ EMAIL DEBUG IMPORT
+import User from '../models/User.js';
+import jwt from 'jsonwebtoken';
 import sendEmail from '../utils/sendEmail.js';
 
-const router = express.Router();
-
+// =====================================================
+// 🔐 TOKEN GENERATOR
+// =====================================================
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: '30d',
+  });
+};
 
 // =====================================================
-// 🔐 AUTH ROUTES
+// 👑 GET ALL USERS (ADMIN)
 // =====================================================
-
-router.post('/login', authUser);
-
-router.post('/send-otp', sendSignupOTP);
-
-router.post('/verify-signup', verifyOTPAndSignup);
-
-router.post('/forgot-password-otp', forgotPasswordOTP);
-
-router.post('/reset-password', resetPassword);
-
-
-// =====================================================
-// 🧪 TEST EMAIL ROUTE
-// =====================================================
-
-router.get('/test-email', async (req, res) => {
-
+export const getAllUsers = async (req, res) => {
   try {
+    const users = await User.find({ role: 'user' })
+      .select('-password')
+      .lean();
+
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// =====================================================
+// 📩 SEND SIGNUP OTP
+// =====================================================
+export const sendSignupOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser?.isVerified) {
+      return res.status(400).json({
+        message: 'User already exists and is verified',
+      });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpire = new Date(Date.now() + 10 * 60 * 1000);
+
+    await User.findOneAndUpdate(
+      { email },
+      {
+        email,
+        otp,
+        otpExpire,
+        isVerified: false,
+      },
+      { upsert: true, new: true }
+    );
 
     await sendEmail({
-      email: 'ykumawat8690@gmail.com',
-      subject: '🐾 PetVeda SMTP Test',
-      otp: '123456'
+      email,
+      subject: 'PetVeda Email Verification',
+      otp,
+      message: `Your verification code is ${otp}`,
     });
 
-    res.status(200).json({
-      success: true,
-      message: 'Email sent successfully'
-    });
-
+    res.json({ message: 'OTP sent successfully' });
   } catch (error) {
-
-    console.log('❌ TEST EMAIL ERROR');
-    console.log(error);
-
     res.status(500).json({
-      success: false,
-      error: error.message
+      message: 'OTP sending failed',
+      error: error.message,
     });
   }
-});
-
-
-// =====================================================
-// 👤 PROFILE ROUTES
-// =====================================================
-
-router.route('/profile')
-  .get(protect, getUserProfile)
-  .put(protect, updateUserProfile);
-
+};
 
 // =====================================================
-// 🔑 PASSWORD ROUTES
+// ✅ VERIFY OTP + SIGNUP COMPLETE
 // =====================================================
+export const verifyOTPAndSignup = async (req, res) => {
+  try {
+    const { name, email, password, otp, phone } = req.body;
 
-router.route('/change-password')
-  .put(protect, updateUserPassword);
+    const user = await User.findOne({ email });
 
+    if (!user || user.otp !== otp || user.otpExpire < Date.now()) {
+      return res.status(400).json({
+        message: 'Invalid or expired OTP',
+      });
+    }
+
+    user.name = name;
+    user.password = password;
+    user.phone = phone || '';
+    user.isVerified = true;
+    user.otp = undefined;
+    user.otpExpire = undefined;
+
+    await user.save();
+
+    res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 // =====================================================
-// 🏠 ADDRESS ROUTES
+// 🔑 LOGIN
 // =====================================================
+export const authUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-router.post('/add-address', protect, addUserAddress);
+    const user = await User.findOne({ email });
 
-router.delete('/address/:id', protect, deleteUserAddress);
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
-router.put('/address/default/:id', protect, setDefaultAddress);
+    if (!user.isVerified) {
+      return res.status(401).json({
+        message: 'Please verify your email first',
+      });
+    }
 
+    const isMatch = await user.matchPassword(password);
+
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      profilePic: user.profilePic,
+      phone: user.phone,
+      addresses: user.addresses,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 // =====================================================
-// 🛒 ORDER ROUTES
+// 🔐 FORGOT PASSWORD OTP
 // =====================================================
+export const forgotPasswordOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
 
-router.route('/my-orders')
-  .get(protect, getMyOrders);
+    const user = await User.findOne({ email });
 
-router.route('/orders')
-  .post(protect, addOrderItems);
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found',
+      });
+    }
 
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    user.otp = otp;
+    user.otpExpire = new Date(Date.now() + 10 * 60 * 1000);
+
+    await user.save({ validateBeforeSave: false });
+
+    await sendEmail({
+      email,
+      subject: 'PetVeda Password Reset OTP',
+      otp,
+      message: `Your reset code is ${otp}`,
+    });
+
+    res.json({ message: 'Reset OTP sent' });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Failed to send OTP',
+      error: error.message,
+    });
+  }
+};
 
 // =====================================================
-// 👑 ADMIN ROUTES
+// 🔁 RESET PASSWORD
 // =====================================================
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
 
-router.route('/')
-  .get(protect, admin, getAllUsers);
+    const user = await User.findOne({ email });
 
+    if (!user || user.otp !== otp || user.otpExpire < Date.now()) {
+      return res.status(400).json({
+        message: 'Invalid or expired OTP',
+      });
+    }
 
-export default router;
+    user.password = newPassword;
+    user.otp = undefined;
+    user.otpExpire = undefined;
+
+    await user.save();
+
+    res.json({ message: 'Password reset successful' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// =====================================================
+// 👤 GET PROFILE
+// =====================================================
+export const getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id)
+      .select('-password')
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// =====================================================
+// ✏️ UPDATE PROFILE
+// =====================================================
+export const updateUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const { name, email, phone, profilePic, password } = req.body;
+
+    user.name = name || user.name;
+    user.email = email || user.email;
+    user.phone = phone || user.phone;
+    user.profilePic = profilePic || user.profilePic;
+
+    if (password) {
+      user.password = password;
+    }
+
+    await user.save({ validateBeforeSave: false });
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      profilePic: user.profilePic,
+      addresses: user.addresses,
+      role: user.role,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// =====================================================
+// 🔐 CHANGE PASSWORD
+// =====================================================
+export const updateUserPassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+
+    const user = await User.findById(req.user._id);
+
+    if (!user || !(await user.matchPassword(oldPassword))) {
+      return res.status(401).json({
+        message: 'Old password incorrect',
+      });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: 'Password updated' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// =====================================================
+// 🏠 ADD ADDRESS
+// =====================================================
+export const addUserAddress = async (req, res) => {
+  try {
+    const { label, fullAddress, city, pincode, phone } = req.body;
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const isFirst = user.addresses.length === 0;
+
+    user.addresses.push({
+      label: label || 'Home',
+      fullAddress,
+      city,
+      pincode,
+      phone,
+      isDefault: isFirst,
+    });
+
+    await user.save({ validateBeforeSave: false });
+
+    res.status(201).json(user.addresses);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// =====================================================
+// 🗑️ DELETE ADDRESS
+// =====================================================
+export const deleteUserAddress = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.addresses = user.addresses.filter(
+      (a) => a._id.toString() !== req.params.id
+    );
+
+    await user.save({ validateBeforeSave: false });
+
+    res.json(user.addresses);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// =====================================================
+// ⭐ SET DEFAULT ADDRESS
+// =====================================================
+export const setDefaultAddress = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.addresses.forEach((a) => {
+      a.isDefault = a._id.toString() === req.params.id;
+    });
+
+    await user.save({ validateBeforeSave: false });
+
+    res.json(user.addresses);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
