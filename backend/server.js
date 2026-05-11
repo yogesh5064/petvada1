@@ -3,14 +3,23 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // =======================
-// 🔴 ENV DEBUG (IMPORTANT)
+// 🔐 ENV SAFETY CHECKS
 // =======================
-console.log("EMAIL_USER:", process.env.EMAIL_USER);
-console.log("EMAIL_PASS:", process.env.EMAIL_PASS);
+if (!process.env.JWT_SECRET) {
+  console.error('❌ JWT_SECRET missing in .env');
+  process.exit(1);
+}
 
-console.log("RESEND KEY EXISTS:", !!process.env.RESEND_API_KEY);
-console.log("RESEND KEY PREVIEW:", process.env.RESEND_API_KEY?.slice(0, 8));
+if (!process.env.RESEND_API_KEY) {
+  console.warn('⚠️ RESEND_API_KEY missing — emails will fail');
+}
 
+console.log('EMAIL_USER:', process.env.EMAIL_USER || 'NOT SET');
+console.log('RESEND KEY LOADED:', !!process.env.RESEND_API_KEY);
+
+// =======================
+// IMPORTS
+// =======================
 import express from 'express';
 import cors from 'cors';
 import cron from 'node-cron';
@@ -35,63 +44,63 @@ import appointmentRoutes from './routes/appointmentRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import hostelRoutes from './routes/hostelRoutes.js';
 
-// ======================================================
-// DATABASE CONNECTION
-// ======================================================
+// =======================
+// DB CONNECTION
+// =======================
 connectDB();
 
-// ======================================================
-// EXPRESS APP
-// ======================================================
+// =======================
+// APP INIT
+// =======================
 const app = express();
 
-// ======================================================
-// SECURITY MIDDLEWARE
-// ======================================================
+// =======================
+// SECURITY
+// =======================
 app.use(helmet());
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 500,
-  message: 'Too many requests from this IP, please try again later.'
-});
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 500,
+  })
+);
 
-app.use(limiter);
-
-// ======================================================
+// =======================
 // CORS
-// ======================================================
-app.use(cors({
-  origin: '*',
-  credentials: true
-}));
+// =======================
+app.use(
+  cors({
+    origin: '*',
+    credentials: true,
+  })
+);
 
-// ======================================================
+// =======================
 // BODY PARSER
-// ======================================================
+// =======================
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
-// ======================================================
+// =======================
 // STATIC FILES
-// ======================================================
+// =======================
 const __dirname = path.resolve();
-
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ======================================================
-// ROOT ROUTE
-// ======================================================
+// =======================
+// ROOT
+// =======================
 app.get('/', (req, res) => {
-  res.status(200).json({
+  res.json({
     success: true,
-    message: '🐾 PetVeda API is running'
+    message: '🐾 PetVeda API Running',
   });
 });
 
-// ======================================================
-// API ROUTES
-// ======================================================
+// =======================
+// ROUTES
+// =======================
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/pets', petRoutes);
@@ -100,125 +109,103 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/hostel', hostelRoutes);
 
-// ======================================================
-// CRON JOB
-// ======================================================
+// =======================
+// CRON JOB (EMAIL REMINDERS)
+// =======================
 cron.schedule('0 * * * *', async () => {
-
-  console.log('🔍 Running Scheduled Reminders...');
+  console.log('🔔 Running reminder cron...');
 
   try {
-
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const targetDateStr = tomorrow.toISOString().split('T')[0];
+    const targetDate = tomorrow.toISOString().split('T')[0];
 
     // ================= APPOINTMENTS =================
     const appointments = await Appointment.find({
-      date: targetDateStr,
-      status: 'Approved'
+      status: 'Approved',
     }).populate('user', 'name email');
 
-    for (const appItem of appointments) {
+    for (const a of appointments) {
+      if (!a.user?.email) continue;
 
       try {
-
-        console.log("Sending email to:", appItem.user.email);
-
-        const response = await sendEmail({
-          email: appItem.user.email,
-          subject: `🔔 Reminder: Appointment Tomorrow for ${appItem.petName}`,
+        await sendEmail({
+          to: a.user.email,
+          subject: `🔔 Reminder: Appointment for ${a.petName}`,
           html: `
-            <div style="font-family:sans-serif;padding:20px;border-radius:20px;border:1px solid #ddd;">
-              <h2 style="color:#4f46e5;">🐾 Appointment Reminder</h2>
-
-              <p>Hi <b>${appItem.user.name}</b>,</p>
-
-              <p>Aapke pet ka appointment kal scheduled hai.</p>
-
-              <p><b>Pet:</b> ${appItem.petName}</p>
-              <p><b>Time:</b> ${appItem.time}</p>
+            <div style="font-family:sans-serif">
+              <h2>Appointment Reminder</h2>
+              <p>Hi ${a.user.name}</p>
+              <p>Your appointment for <b>${a.petName}</b> is scheduled tomorrow.</p>
+              <p><b>Time:</b> ${a.time}</p>
             </div>
-          `
+          `,
         });
-
-        console.log("EMAIL RESPONSE:", response);
-
-      } catch (emailError) {
-        console.log('Appointment Email Error:', emailError.message);
+      } catch (err) {
+        console.error('Appointment email failed:', err.message);
       }
     }
 
     // ================= HOSTEL =================
-    const upcomingCheckouts = await Hostel.find({
-      checkOutDate: targetDateStr,
-      status: 'Checked-In'
+    const stays = await Hostel.find({
+      status: 'Checked-In',
     }).populate('owner', 'name email');
 
-    for (const stay of upcomingCheckouts) {
+    for (const s of stays) {
+      if (!s.owner?.email) continue;
 
       try {
-
-        console.log("Sending hostel email to:", stay.owner.email);
-
-        const response = await sendEmail({
-          email: stay.owner.email,
-          subject: `🏨 ${stay.petName}'s Stay Ends Tomorrow`,
+        await sendEmail({
+          to: s.owner.email,
+          subject: `🏨 Stay Ending Soon - ${s.petName}`,
           html: `
-            <div style="font-family:sans-serif;padding:20px;border-radius:20px;border:1px solid #ddd;">
-              <h2 style="color:#10b981;">🏨 Resort Reminder</h2>
-
-              <p>Hi <b>${stay.owner.name}</b>,</p>
-
-              <p>Aapke pet <b>${stay.petName}</b> ka stay kal complete ho raha hai.</p>
+            <div style="font-family:sans-serif">
+              <h2>Hostel Reminder</h2>
+              <p>Hi ${s.owner.name}</p>
+              <p>Your pet <b>${s.petName}</b> stay is ending soon.</p>
             </div>
-          `
+          `,
         });
-
-        console.log("EMAIL RESPONSE:", response);
-
-      } catch (emailError) {
-        console.log('Hostel Email Error:', emailError.message);
+      } catch (err) {
+        console.error('Hostel email failed:', err.message);
       }
     }
 
-    console.log('✅ Reminder Cron Completed');
-
-  } catch (error) {
-    console.error('❌ CRON ERROR:', error);
+    console.log('✅ Cron completed');
+  } catch (err) {
+    console.error('❌ Cron error:', err);
   }
 });
 
-// ======================================================
+// =======================
 // 404 HANDLER
-// ======================================================
+// =======================
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: `Route not found: ${req.originalUrl}`
+    message: `Route not found: ${req.originalUrl}`,
   });
 });
 
-// ======================================================
-// GLOBAL ERROR HANDLER
-// ======================================================
+// =======================
+// ERROR HANDLER
+// =======================
 app.use((err, req, res, next) => {
-  console.error('GLOBAL ERROR:', err);
-
+  console.error('🔥 ERROR:', err);
   res.status(500).json({
     success: false,
-    message: err.message || 'Internal Server Error'
+    message: err.message || 'Server Error',
   });
 });
 
-// ======================================================
-// SERVER
-// ======================================================
+// =======================
+// START SERVER
+// =======================
 const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
 
 export default app;

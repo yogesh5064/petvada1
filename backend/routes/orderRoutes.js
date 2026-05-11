@@ -1,6 +1,10 @@
+import express from 'express'; // 1. Express import karo
 import Order from '../models/orderModel.js';
 import Product from '../models/productModel.js';
 import sendEmail from '../utils/sendEmail.js';
+
+// 2. ROUTER DEFINE KARO (Ye missing tha)
+const router = express.Router();
 
 // =====================================================
 // 🛒 CREATE ORDER
@@ -16,9 +20,7 @@ export const addOrderItems = async (req, res) => {
     } = req.body;
 
     if (!orderItems?.length) {
-      return res.status(400).json({
-        message: 'Cart is empty',
-      });
+      return res.status(400).json({ message: 'Cart is empty' });
     }
 
     const order = new Order({
@@ -38,9 +40,6 @@ export const addOrderItems = async (req, res) => {
 
     const createdOrder = await order.save();
 
-    // =================================================
-    // 📧 ORDER CONFIRMATION EMAIL
-    // =================================================
     try {
       const rows = orderItems
         .map(
@@ -49,22 +48,14 @@ export const addOrderItems = async (req, res) => {
           <td>${item.name}</td>
           <td style="text-align:center">${item.qty}</td>
           <td style="text-align:right">₹${item.price || item.sellingPrice}</td>
-        </tr>
-      `
+        </tr>`
         )
         .join('');
 
       await sendEmail({
         email: req.user.email,
         subject: 'Order Confirmed - PetVeda',
-        html: generateOrderTemplate(
-          'Confirmed',
-          ownerName,
-          createdOrder._id,
-          rows,
-          totalPrice,
-          shippingAddress
-        ),
+        html: generateOrderTemplate('Confirmed', ownerName, createdOrder._id, rows, totalPrice, shippingAddress),
       });
     } catch (err) {
       console.error('Email Error:', err.message);
@@ -72,10 +63,7 @@ export const addOrderItems = async (req, res) => {
 
     res.status(201).json(createdOrder);
   } catch (error) {
-    res.status(500).json({
-      message: 'Order creation failed',
-      error: error.message,
-    });
+    res.status(500).json({ message: 'Order creation failed', error: error.message });
   }
 };
 
@@ -84,33 +72,22 @@ export const addOrderItems = async (req, res) => {
 // =====================================================
 export const updateOrderStatus = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id).populate(
-      'user',
-      'name email'
-    );
-
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
+    const order = await Order.findById(req.params.id).populate('user', 'name email');
+    if (!order) return res.status(404).json({ message: 'Order not found' });
 
     const newStatus = req.body.status;
     const oldStatus = order.status;
 
-    // =================================================
-    // 🚚 STOCK DEDUCTION ONLY ON DELIVERY
-    // =================================================
     if (oldStatus !== 'Delivered' && newStatus === 'Delivered') {
       await Promise.all(
         order.orderItems.map(async (item) => {
           const product = await Product.findById(item.product);
-
           if (product) {
             product.stock = Math.max(0, product.stock - item.qty);
             await product.save();
           }
         })
       );
-
       order.isDelivered = true;
       order.deliveredAt = new Date();
     }
@@ -118,9 +95,6 @@ export const updateOrderStatus = async (req, res) => {
     order.status = newStatus || order.status;
     const updatedOrder = await order.save();
 
-    // =================================================
-    // 📧 STATUS EMAIL
-    // =================================================
     if (oldStatus !== updatedOrder.status) {
       try {
         await sendEmail({
@@ -132,12 +106,9 @@ export const updateOrderStatus = async (req, res) => {
         console.error('Status Email Error:', err.message);
       }
     }
-
     res.json(updatedOrder);
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -146,57 +117,39 @@ export const updateOrderStatus = async (req, res) => {
 // =====================================================
 export const getMyOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ user: req.user._id }).sort({
-      createdAt: -1,
-    });
-
+    const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
-    res.status(500).json({
-      message: 'Failed to fetch orders',
-    });
+    res.status(500).json({ message: 'Failed to fetch orders' });
   }
 };
 
-// =====================================================
-// 📧 ORDER TEMPLATE
-// =====================================================
-const generateOrderTemplate = (
-  type,
-  name,
-  id,
-  rows,
-  total,
-  addr
-) => {
-  return `
+// Helper Templates
+const generateOrderTemplate = (type, name, id, rows, total, addr) => `
     <div style="font-family: Arial; max-width:600px; margin:auto;">
       <h2>🐾 PetVeda Order ${type}</h2>
       <p>Hi <b>${name}</b></p>
-
-      <table width="100%" style="border-collapse:collapse">
-        ${rows}
-      </table>
-
+      <table width="100%" style="border-collapse:collapse">${rows}</table>
       <h3>Total: ₹${total}</h3>
       <p>Delivery Address: ${addr?.address || ''}</p>
-    </div>
-  `;
-};
+    </div>`;
 
-// =====================================================
-// 📧 STATUS TEMPLATE
-// =====================================================
-const statusEmailTemplate = (order, updatedOrder) => {
-  return `
+const statusEmailTemplate = (order, updatedOrder) => `
     <div style="font-family: Arial;">
       <h2>Order Update - ${updatedOrder.status}</h2>
       <p>Hi ${order.ownerName}</p>
-
       <p>Order ID: ${order._id}</p>
       <p>Status: ${updatedOrder.status}</p>
       <p>Total: ₹${order.totalPrice}</p>
-    </div>
-  `;
-};
+    </div>`;
+
+// =====================================================
+// 🚀 DEFINE ROUTES (Ye bhi missing tha)
+// =====================================================
+// Note: Yahan 'protect' middleware add kar lena agar login required hai
+router.post('/', addOrderItems);
+router.get('/myorders', getMyOrders);
+router.put('/:id/status', updateOrderStatus);
+
+// 3. FINAL EXPORT (Ab ye 'router' ko pehchanega)
 export default router;
