@@ -29,11 +29,16 @@ export const getAllUsers = async (req, res) => {
 
 export const sendSignupOTP = async (req, res) => {
   try {
-    const { email } = req.body;
+    const email = req.body.email?.trim().toLowerCase();
     if (!email) return res.status(400).json({ message: 'Email required' });
 
+    const userExists = await User.findOne({ email }).select('isVerified');
+    if (userExists?.isVerified) {
+      return res.status(400).json({ message: 'This email is already registered' });
+    }
+
     const otp = String(Math.floor(100000 + Math.random() * 900000));
-    const otpExpire = Date.now() + 10 * 60 * 1000;
+    const otpExpire = new Date(Date.now() + 10 * 60 * 1000);
 
     await User.findOneAndUpdate(
       { email },
@@ -55,6 +60,7 @@ export const sendSignupOTP = async (req, res) => {
 
     res.json({ message: 'OTP sent successfully' });
   } catch (err) {
+    console.error('Signup OTP failed:', err.message);
     res.status(500).json({ message: 'OTP sending failed', error: err.message });
   }
 };
@@ -117,18 +123,23 @@ export const authUser = async (req, res) => {
 
 export const forgotPasswordOTP = async (req, res) => {
   try {
-    const { email } = req.body;
+    const email = req.body.email?.trim().toLowerCase();
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const otp = String(Math.floor(100000 + Math.random() * 900000));
     user.otp = otp;
-    user.otpExpire = Date.now() + 10 * 60 * 1000;
+    user.otpExpire = new Date(Date.now() + 10 * 60 * 1000);
     await user.save({ validateBeforeSave: false });
 
-    await sendEmail({ to: email, subject: 'Password Reset OTP', html: `<h1>Your OTP: ${otp}</h1>` });
+    await sendEmail({
+      to: email,
+      subject: 'PetVeda Password Reset OTP',
+      otp,
+    });
     res.json({ message: 'OTP sent' });
   } catch (err) {
+    console.error('Forgot password OTP failed:', err.message);
     res.status(500).json({ message: 'Failed to send OTP', error: err.message });
   }
 };

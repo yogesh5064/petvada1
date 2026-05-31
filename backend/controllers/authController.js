@@ -3,7 +3,7 @@ import User from '../models/User.js';
 import sendEmail from '../utils/sendEmail.js'; // Email utility import karein
 
 export const forgotPassword = async (req, res) => {
-  const { email } = req.body;
+  const email = req.body.email?.trim().toLowerCase();
   
   try {
     // 1. User ko find karein (Optimized query)

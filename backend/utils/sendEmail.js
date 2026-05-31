@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { otpTemplate } from './emailTemplates/otpTemplate.js';
 
 const getResend = () => {
   const key = process.env.RESEND_API_KEY;
@@ -10,32 +11,40 @@ const getResend = () => {
   return new Resend(key);
 };
 
-const sendEmail = async ({ to, subject, html }) => {
-  if (!to || !subject || !html) {
-    throw new Error('Missing email parameters (to, subject, html required)');
+const withTimeout = (promise, ms = 12000) => {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Email service timed out')), ms)
+    ),
+  ]);
+};
+
+const sendEmail = async ({ to, email, subject, html, otp, message }) => {
+  const recipient = to || email;
+  const body = html || (otp ? otpTemplate(otp) : message);
+
+  if (!recipient || !subject || !body) {
+    throw new Error('Missing email parameters (to/email, subject, html/otp/message required)');
   }
 
   try {
     const resend = getResend();
 
-    const response = await resend.emails.send({
-      from: 'PetVeda <onboarding@resend.dev>',
-      to,
-      subject,
-      html,
-    });
-
-    // 🔥 DEBUG LOG (IMPORTANT for OTP issue)
-    console.log('📧 Email sent response:', response);
-
-    return response;
-
-  } catch (error) {
-    console.error('❌ Email send failed:', error);
-
-    throw new Error(
-      error?.message || 'Failed to send email via Resend'
+    const response = await withTimeout(
+      resend.emails.send({
+        from: process.env.EMAIL_FROM || 'PetVeda <onboarding@resend.dev>',
+        to: recipient,
+        subject,
+        html: body,
+      })
     );
+
+    console.log('Email sent:', response?.data?.id || response?.id || recipient);
+    return response;
+  } catch (error) {
+    console.error('Email send failed:', error);
+    throw new Error(error?.message || 'Failed to send email via Resend');
   }
 };
 
